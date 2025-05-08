@@ -10,14 +10,23 @@ import re
 import nltk
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
+from .auth import register_user, authenticate_user
+from contextlib import asynccontextmanager
+from .database import init_db
+from .routes.auth_routes import router as auth_router
 
-# Initialize FastAPI app
-app = FastAPI()
 
-# CORS middleware
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()  # Initialize DB on startup
+    yield
+
+app = FastAPI(lifespan=lifespan)
+app.include_router(auth_router, prefix="/api")  # Added /api prefix
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # For development only
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
