@@ -11,3 +11,4 @@ passlib
 pandas
 scikit-learn
 pytest
+pytest
