@@ -2,3 +2,12 @@ fastapi
 uvicorn
 joblib
 nltk
+SQLAlchemy
+pydantic
+python-dotenv
+requests
+bcrypt
+passlib
+pandas
+scikit-learn
+pytest
