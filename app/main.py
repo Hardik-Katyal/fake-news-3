@@ -162,11 +162,19 @@ async def predict(
         logger.error(f"Prediction error: {str(e)}", exc_info=True)
         raise HTTPException(500, "Prediction service unavailable")
 
+class GeminiVerifyRequest(BaseModel):
+    title: str
+    text: str
+
+class GeminiVerifyRequest(BaseModel):
+    title: str
+    text: str
+
 @app.post("/gemini-verify/")
-async def gemini_verify(title: str, text: str):
+async def gemini_verify(request: GeminiVerifyRequest):
     """Get Gemini's fact-checking analysis"""
     try:
-        result = GeminiService().verify_content(title, text)
+        result = await GeminiService().verify_content(request.title, request.text)
         if not result:
             raise HTTPException(503, "Verification service unavailable")
             
