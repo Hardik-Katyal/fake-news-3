@@ -75,6 +75,8 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+app.include_router(auth_router)
+
 # Configure CORS (more secure in production)
 app.add_middleware(
     CORSMiddleware,
@@ -162,9 +164,26 @@ async def predict(
         logger.error(f"Prediction error: {str(e)}", exc_info=True)
         raise HTTPException(500, "Prediction service unavailable")
 
-class GeminiVerifyRequest(BaseModel):
+class GeminiExplainRequest(BaseModel):
     title: str
     text: str
+    prediction: str
+    confidence: float
+
+@app.post("/gemini-explain/")
+async def gemini_explain(request: GeminiExplainRequest):
+    """Get prediction explanation from Gemini"""
+    try:
+        content = f"{request.title}\n\n{request.text}"[:2000]  # Combine & truncate
+        explanation = await GeminiService().explain_prediction(
+            content, 
+            request.prediction,
+            request.confidence
+        )
+        return {"explanation": explanation}
+    except Exception as e:
+        logger.error(f"Explanation failed: {str(e)}")
+        raise HTTPException(500, "Explanation service unavailable")
 
 class GeminiVerifyRequest(BaseModel):
     title: str
