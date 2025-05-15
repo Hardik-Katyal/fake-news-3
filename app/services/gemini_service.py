@@ -4,6 +4,7 @@ from typing import Optional, Dict
 import logging
 import json
 from dotenv import load_dotenv
+import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -13,23 +14,56 @@ class GeminiService:
         api_key = os.getenv('GEMINI_API_KEY')
         if not api_key:
             logger.error("Missing GEMINI_API_KEY")
-            raise ValueError(
-                "API key not configured. "
-                "Set GEMINI_API_KEY in .env or environment variables"
-            )
+            raise ValueError("API key not configured. Set GEMINI_API_KEY in .env")
             
         genai.configure(api_key=api_key)
         self.model = genai.GenerativeModel('gemini-1.5-flash-latest')
-        self.min_confidence = 0.95
+        #self.min_confidence = 0.95
 
     def test_model(self):
         try:
             response = self.model.generate_content("Is 2+2=5?")
-            logger.info(f"API test response: {response.text}")
-            return True
+            return "4" in response.text
         except Exception as e:
             logger.error("API test failed", exc_info=True)
             return False
+
+
+    async def explain_prediction(self, content: str, prediction: str, confidence: float) -> str:
+        """Get model behavior explanation from Gemini"""
+        try:
+            prompt = f"""Analyze this news content and ML model prediction:
+            Content: {content[:1500]}
+            Prediction: {prediction} (Confidence: {confidence:.0%})
+            
+            Explain 3 potential linguistic patterns that might have led to this prediction.
+            Focus on: 
+            - Emotional language
+            - Unusual claims patterns
+            - Source reliability indicators
+            - Confidence score interpretation
+            - Model output reliability interpretation
+            
+            Use this format:
+            1. [Pattern Type]: Brief explanation (max 15 words)
+            2. [Pattern Type]: Brief explanation
+            3. [Pattern Type]: Brief explanation
+            4. [Pattern Type]: Brief explanation
+            
+            Keep response under 120 words. No markdown."""
+            
+            response = await asyncio.to_thread(
+                self.model.generate_content,
+                prompt
+            )
+            return response.text
+            
+        except Exception as e:
+            logger.error(f"Explanation failed: {str(e)}", exc_info=True)
+            return "Explanation unavailable: Service error"            
+        except asyncio.TimeoutError:
+            logger.warning("Gemini API timeout")
+            return "Explanation unavailable: API timeout"
 
     async def verify_content(self, title: str, text: str) -> Optional[Dict]:
         try:
