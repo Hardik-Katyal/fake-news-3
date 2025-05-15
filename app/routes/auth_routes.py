@@ -6,7 +6,7 @@ from ..auth import register_user, authenticate_user
 import logging
 
 logger = logging.getLogger(__name__)
-router = APIRouter(tags=["Authentication"])
+router = APIRouter(prefix="/api", tags=["Authentication"])  # Changed prefix to /api
 
 class UserRegister(BaseModel):
     username: str
